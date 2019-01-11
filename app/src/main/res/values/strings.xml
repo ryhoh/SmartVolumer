@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">SmartVolumer</string>
+    <string name="automationOn">自動調整ON</string>
+    <string name="automationOff">自動調整OFF</string>
 </resources>
