@@ -16,55 +16,23 @@ import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity {
 
-    SeekBar vol;
     AudioManager am;
     AudioRecord ar;
     boolean autoEnabled = false;
-    int micSenseCnt = 0, micSenseSum = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        vol = findViewById(R.id.seekbar_vol);
+        // 音量管理オブジェクトの初期化
         am = (AudioManager)getSystemService(Context.AUDIO_SERVICE);
-        final TextView textView_envVol = findViewById(R.id.tv_envVol);
-
-        // 音量調整用シークバー
-        init_seekBar();
 
         // AudioRecordのハンドラ
-        handler_audioRecord(textView_envVol);
-
-        // 学習ボタン
-        init_buttonLearn();
+        handler_audioRecord();
 
         // モード切替ボタン
         init_buttonToggleMode();
-    }
-
-    private void init_seekBar() {
-        final TextView textView_playingVol = findViewById(R.id.tv_playingVol);
-        vol.setOnSeekBarChangeListener(
-                new SeekBar.OnSeekBarChangeListener() {
-                    @Override
-                    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                        int pr = seekBar.getProgress();
-                        int am_max = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
-                        am.setStreamVolume(AudioManager.STREAM_MUSIC, am_max * pr / seekBar.getMax(), 0);
-                        textView_playingVol.setText("再生音量: " + am_max * pr / seekBar.getMax());
-                    }
-
-                    @Override
-                    public void onStartTrackingTouch(SeekBar seekBar) {
-                    }
-
-                    @Override
-                    public void onStopTrackingTouch(SeekBar seekBar) {
-                    }
-                }
-        );
     }
 
     private int init_audioRecord() {
@@ -79,31 +47,33 @@ public class MainActivity extends AppCompatActivity {
                     if (ar.getState() == AudioRecord.STATE_INITIALIZED) {
                         break;
                     }
-                } catch (Exception e) { }
+                } catch (Exception e) {};
             }
         }
 
-        if (buffSize == 0) {
+        if (buffSize == AudioRecord.ERROR_BAD_VALUE || buffSize == AudioRecord.ERROR) {
             throw new IllegalStateException();
         }
 
         return buffSize;
     }
 
-    private void handler_audioRecord(final TextView textView_envVol) {
+    private void handler_audioRecord() {
+        final TextView textView_playingVol = findViewById(R.id.tv_playingVol);
+        final TextView textView_envVol = findViewById(R.id.tv_envVol);
+
         // マイク入力用 AudioRecord の設定
         final int buffSize = init_audioRecord();
-        final TextView textView_playingVol = findViewById(R.id.tv_playingVol);
+        ar.startRecording();
 
         final Handler handler = new Handler();
-        ar.startRecording();
         handler.post(new Runnable() {
             short[] buffer = new short[buffSize];
+            int micSenseCnt = 0, micSenseSum = 0;
             @Override
             public void run() {
-                int res;
-                if ((res = ar.read(buffer, 0, buffSize)) < 0) {
-                    Log.e("AudioRead", String.valueOf(res));  // -3が出たらデバイスの設定からアプリのマイクを許可
+                if (ar.read(buffer, 0, buffSize) < 0) {
+                    // 起動に失敗する場合，デバイスの設定->アプリ->権限->マイクを許可
                     throw new IllegalStateException();
                 }
                 // 最大
@@ -111,14 +81,14 @@ public class MainActivity extends AppCompatActivity {
                 for (short x: buffer) {
                     max_val = Math.max(max_val, x);
                 }
-//                textView_envVol.setText(String.valueOf(max_val));
 
                 // 何度も計測して，平均値をその時間間隔の間の計測結果とする
                 micSenseSum += max_val;
                 if (micSenseCnt != 9) micSenseCnt++;
                 else {
-                    double inputLevel = micSenseSum / 10;
+                    final double inputLevel = micSenseSum / 10;
                     micSenseSum = 0; micSenseCnt = 0;
+
                     textView_envVol.setText(String.valueOf(inputLevel));
 
                     if (autoEnabled) {
@@ -126,25 +96,15 @@ public class MainActivity extends AppCompatActivity {
                         double outLevel = RegressionModel.infer(inputLevel / 100000);
                         outLevel = Math.min(outLevel, 0.25);
                         // 下限も設定して音が消えないようにする
-                        int i_outLevel = (int) Math.max(Math.round(outLevel * am.getStreamMaxVolume(AudioManager.STREAM_MUSIC)), 1);
+                        final int i_outLevel = (int) Math.max(Math.round(outLevel * am.getStreamMaxVolume(AudioManager.STREAM_MUSIC)), 1);
 
                         // 再生音量を変更し，TextViewにも反映
                         am.setStreamVolume(AudioManager.STREAM_MUSIC, i_outLevel, 0);
-                        textView_playingVol.setText("再生音量: " + i_outLevel);
+                        textView_playingVol.setText(String.valueOf(i_outLevel));
                     }
                 }
 
                 handler.postDelayed(this, 100);
-            }
-        });
-    }
-
-    private void init_buttonLearn() {
-        final Button button_learn = findViewById(R.id.but_learn);
-        button_learn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-//                reg.learn(inputLevel, am.getStreamVolume(AudioManager.STREAM_MUSIC));
             }
         });
     }
@@ -156,10 +116,10 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if (!autoEnabled) {
-                    textView_mode.setText("自動調整ON");
+                    textView_mode.setText(R.string.automationOn);
                     autoEnabled = true;
                 } else {
-                    textView_mode.setText("自動調整OFF");
+                    textView_mode.setText(R.string.automationOff);
                     autoEnabled = false;
                 }
             }
