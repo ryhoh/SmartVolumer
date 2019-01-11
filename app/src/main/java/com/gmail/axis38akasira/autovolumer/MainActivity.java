@@ -19,8 +19,8 @@ public class MainActivity extends AppCompatActivity {
     SeekBar vol;
     AudioManager am;
     AudioRecord ar;
-//    RegressionEngine reg = new RegressionEngine();
     boolean autoEnabled = false;
+    int micSenseCnt = 0, micSenseSum = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -93,7 +93,6 @@ public class MainActivity extends AppCompatActivity {
     private void handler_audioRecord(final TextView textView_envVol) {
         // マイク入力用 AudioRecord の設定
         final int buffSize = init_audioRecord();
-
         final TextView textView_playingVol = findViewById(R.id.tv_playingVol);
 
         final Handler handler = new Handler();
@@ -112,22 +111,30 @@ public class MainActivity extends AppCompatActivity {
                 for (short x: buffer) {
                     max_val = Math.max(max_val, x);
                 }
-                textView_envVol.setText(String.valueOf(max_val));
-                double inputLevel = max_val;
+//                textView_envVol.setText(String.valueOf(max_val));
 
-                if (autoEnabled) {
-                    // 耳を護るために上限を設ける
-                    double outLevel = RegressionModel.infer(inputLevel / 100000);
-                    outLevel = Math.min(outLevel, 0.25);
-                    // 下限も設定して音が消えないようにする
-                    int i_outLevel = (int)Math.max(Math.round(outLevel * am.getStreamMaxVolume(AudioManager.STREAM_MUSIC)), 1);
+                // 何度も計測して，平均値をその時間間隔の間の計測結果とする
+                micSenseSum += max_val;
+                if (micSenseCnt != 9) micSenseCnt++;
+                else {
+                    double inputLevel = micSenseSum / 10;
+                    micSenseSum = 0; micSenseCnt = 0;
+                    textView_envVol.setText(String.valueOf(inputLevel));
 
-                    // 再生音量を変更し，TextViewにも反映
-                    am.setStreamVolume(AudioManager.STREAM_MUSIC, i_outLevel, 0);
-                    textView_playingVol.setText("再生音量: " + i_outLevel);
+                    if (autoEnabled) {
+                        // 耳を護るために上限を設ける
+                        double outLevel = RegressionModel.infer(inputLevel / 100000);
+                        outLevel = Math.min(outLevel, 0.25);
+                        // 下限も設定して音が消えないようにする
+                        int i_outLevel = (int) Math.max(Math.round(outLevel * am.getStreamMaxVolume(AudioManager.STREAM_MUSIC)), 1);
+
+                        // 再生音量を変更し，TextViewにも反映
+                        am.setStreamVolume(AudioManager.STREAM_MUSIC, i_outLevel, 0);
+                        textView_playingVol.setText("再生音量: " + i_outLevel);
+                    }
                 }
 
-                handler.postDelayed(this, 500);
+                handler.postDelayed(this, 100);
             }
         });
     }
