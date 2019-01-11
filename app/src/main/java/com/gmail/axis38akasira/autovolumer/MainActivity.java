@@ -84,7 +84,7 @@ public class MainActivity extends AppCompatActivity {
 
                 // 何度も計測して，平均値をその時間間隔の間の計測結果とする
                 micSenseSum += max_val;
-                if (micSenseCnt != 10) micSenseCnt++;
+                if (micSenseCnt != 9) micSenseCnt++;
                 else {
                     final double inputLevel = micSenseSum / 10;
                     micSenseSum = 0; micSenseCnt = 0;
