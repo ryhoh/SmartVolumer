@@ -47,7 +47,7 @@ public class MainActivity extends AppCompatActivity {
                     if (ar.getState() == AudioRecord.STATE_INITIALIZED) {
                         break;
                     }
-                } catch (Exception e) {};
+                } catch (Exception e) {}
             }
         }
 
