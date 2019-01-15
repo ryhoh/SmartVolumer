@@ -2,13 +2,16 @@ package com.gmail.axis38akasira.autovolumer;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.provider.Settings;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -22,6 +25,7 @@ public class MainActivity extends AppCompatActivity {
 
     AudioManager am;
     AudioRecord ar;
+    boolean micAccessAllowed = false;
     boolean autoEnabled = false;
 
     @Override
@@ -29,7 +33,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        //
+        // 権限のチェック
         check_permission();
 
         // 音量管理オブジェクトの初期化
@@ -135,14 +139,24 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if (!autoEnabled) {
-                    textView_mode.setText(R.string.automationOn);
-                    autoEnabled = true;
+                    if (!micAccessAllowed) {
+                        openSettings();
+                    } else {
+                        textView_mode.setText(R.string.automationOn);
+                        autoEnabled = true;
+                    }
                 } else {
                     textView_mode.setText(R.string.automationOff);
                     autoEnabled = false;
                 }
             }
         });
+    }
+
+    private void openSettings() {
+        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+        intent.setData(Uri.fromParts("package", getPackageName(), null));
+        startActivity(intent);
     }
 
     @Override
