@@ -2,6 +2,7 @@ package com.gmail.axis38akasira.autovolumer;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.AudioFormat;
@@ -14,6 +15,7 @@ import android.os.Handler;
 import android.provider.Settings;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -22,6 +24,8 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity {
+
+    final int MY_PERMISSIONS_REQUEST_RECORD_AUDIO = 128;
 
     AudioManager am;
     AudioRecord ar;
@@ -47,13 +51,35 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void check_permission() {
-        final int MY_PERMISSIONS_REQUEST_RECORD_AUDIO = 128;
-
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
                 != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.RECORD_AUDIO},
-                    MY_PERMISSIONS_REQUEST_RECORD_AUDIO);
+            // 権限の説明
+            new AlertDialog.Builder(this)
+                .setTitle("マイクへのアクセス")
+                .setMessage("周囲の音量を知るために、マイクへのアクセスを許可してください。")
+                .setPositiveButton(android.R.string.ok,
+                    (DialogInterface dialog, int which) ->
+                        ActivityCompat.requestPermissions(this,
+                            new String[]{Manifest.permission.RECORD_AUDIO},
+                            MY_PERMISSIONS_REQUEST_RECORD_AUDIO)
+                ).create().show();
+        } else {
+            micAccessAllowed = true;
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        if (grantResults.length > 0) {
+            switch (requestCode) {
+                case MY_PERMISSIONS_REQUEST_RECORD_AUDIO:
+                    if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                        micAccessAllowed = true;
+                    } else {
+                        openSettings();
+                    }
+            }
         }
     }
 
@@ -84,52 +110,57 @@ public class MainActivity extends AppCompatActivity {
         final TextView textView_playingVol = findViewById(R.id.tv_playingVol);
         final TextView textView_envVol = findViewById(R.id.tv_envVol);
 
-        // マイク入力用 AudioRecord の設定
-        final int buffSize = init_audioRecord();
-        ar.startRecording();
-
         final Handler handler = new Handler();
         handler.post(new Runnable() {
-            short[] buffer = new short[buffSize];
             int micSenseCnt = 0, micSenseSum = 0;
+            int buffSize;
+            short[] buffer;
             @Override
             public void run() {
-                if (ar.read(buffer, 0, buffSize) < 0) {
-                    // 起動に失敗する場合，デバイスの設定->アプリ->権限->マイクを許可
-                    throw new IllegalStateException();
-                }
-                // 最大
-                int max_val = Integer.MIN_VALUE;
-                for (short x: buffer) {
-                    max_val = Math.max(max_val, x);
-                }
+                if (micAccessAllowed) {
+                    // マイク入力用 AudioRecord の設定
+                    if (ar == null) {
+                        buffSize = init_audioRecord();
+                        buffer = new short[buffSize];
+                        ar.startRecording();
+                    }
 
-                // 何度も計測して，平均値をその時間間隔の間の計測結果とする
-                micSenseSum += max_val;
-                if (micSenseCnt != 10) micSenseCnt++;
-                else {
-                    final double inputLevel = micSenseSum / 10;
-                    micSenseSum = 0; micSenseCnt = 0;
+                    if (ar.read(buffer, 0, buffSize) < 0) {
+                        // 起動に失敗する場合，デバイスの設定->アプリ->権限->マイクを許可
+                        throw new IllegalStateException();
+                    }
+                    // 最大
+                    int max_val = Integer.MIN_VALUE;
+                    for (short x : buffer) {
+                        max_val = Math.max(max_val, x);
+                    }
 
-                    textView_envVol.setText(String.valueOf(inputLevel));
+                    // 何度も計測して，平均値をその時間間隔の間の計測結果とする
+                    micSenseSum += max_val;
+                    if (micSenseCnt != 10) micSenseCnt++;
+                    else {
+                        final double inputLevel = micSenseSum / 10;
+                        micSenseSum = 0;
+                        micSenseCnt = 0;
 
-                    if (autoEnabled) {
-                        // 耳を護るために上限を設ける
-                        double outLevel = RegressionModel.infer(inputLevel / 100000);
-                        outLevel = Math.min(outLevel, 0.25);
-                        // 下限も設定して音が消えないようにする
-                        final int i_outLevel = (int) Math.max(Math.round(outLevel * am.getStreamMaxVolume(AudioManager.STREAM_MUSIC)), 1);
+                        textView_envVol.setText(String.valueOf(inputLevel));
 
-                        // 再生音量を変更し，TextViewにも反映
-                        am.setStreamVolume(AudioManager.STREAM_MUSIC, i_outLevel, 0);
-                        textView_playingVol.setText(String.valueOf(i_outLevel));
+                        if (autoEnabled) {
+                            // 耳を護るために上限を設ける
+                            double outLevel = RegressionModel.infer(inputLevel / 100000);
+                            outLevel = Math.min(outLevel, 0.25);
+                            // 下限も設定して音が消えないようにする
+                            final int i_outLevel = (int) Math.max(Math.round(outLevel * am.getStreamMaxVolume(AudioManager.STREAM_MUSIC)), 1);
+
+                            // 再生音量を変更し，TextViewにも反映
+                            am.setStreamVolume(AudioManager.STREAM_MUSIC, i_outLevel, 0);
+                            textView_playingVol.setText(String.valueOf(i_outLevel));
+                        }
                     }
                 }
-
                 handler.postDelayed(this, 100);
             }
         });
-        ar.stop();
     }
 
     private void init_buttonToggleMode() {
@@ -139,9 +170,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if (!autoEnabled) {
-                    if (!micAccessAllowed) {
-                        openSettings();
-                    } else {
+                    // 録音権限チェック
+                    check_permission();
+                    if (micAccessAllowed) {
                         textView_mode.setText(R.string.automationOn);
                         autoEnabled = true;
                     }
@@ -162,7 +193,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        ar.release();
+        if (ar != null) {
+            ar.stop();
+            ar.release();
+        }
     }
 
 }

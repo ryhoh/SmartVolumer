@@ -2,4 +2,5 @@
     <string name="app_name">SmartVolumer</string>
     <string name="automationOn">自動調整ON</string>
     <string name="automationOff">自動調整OFF</string>
+    <string name="mic_unavailable">マイク使用不可</string>
 </resources>
