@@ -1,12 +1,16 @@
 package com.gmail.axis38akasira.autovolumer;
 
+import android.Manifest;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -25,6 +29,9 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        //
+        check_permission();
+
         // 音量管理オブジェクトの初期化
         am = (AudioManager)getSystemService(Context.AUDIO_SERVICE);
 
@@ -33,6 +40,17 @@ public class MainActivity extends AppCompatActivity {
 
         // モード切替ボタン
         init_buttonToggleMode();
+    }
+
+    private void check_permission() {
+        final int MY_PERMISSIONS_REQUEST_RECORD_AUDIO = 128;
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.RECORD_AUDIO},
+                    MY_PERMISSIONS_REQUEST_RECORD_AUDIO);
+        }
     }
 
     private int init_audioRecord() {
@@ -107,6 +125,7 @@ public class MainActivity extends AppCompatActivity {
                 handler.postDelayed(this, 100);
             }
         });
+        ar.stop();
     }
 
     private void init_buttonToggleMode() {
@@ -129,7 +148,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        ar.stop();
         ar.release();
     }
 
