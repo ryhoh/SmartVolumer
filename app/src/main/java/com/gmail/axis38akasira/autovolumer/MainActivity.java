@@ -137,9 +137,9 @@ public class MainActivity extends AppCompatActivity {
 
                     // 何度も計測して，平均値をその時間間隔の間の計測結果とする
                     micSenseSum += max_val;
-                    if (micSenseCnt != 10) micSenseCnt++;
+                    if (micSenseCnt != 9) micSenseCnt++;
                     else {
-                        final double inputLevel = micSenseSum / 10;
+                        final double inputLevel = micSenseSum / 10.0;
                         micSenseSum = 0;
                         micSenseCnt = 0;
 
@@ -166,20 +166,17 @@ public class MainActivity extends AppCompatActivity {
     private void init_buttonToggleMode() {
         final Button textView_toggleAuto = findViewById(R.id.but_toggleMode);
         final TextView textView_mode = findViewById(R.id.tv_mode);
-        textView_toggleAuto.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (!autoEnabled) {
-                    // 録音権限チェック
-                    check_permission();
-                    if (micAccessAllowed) {
-                        textView_mode.setText(R.string.automationOn);
-                        autoEnabled = true;
-                    }
-                } else {
-                    textView_mode.setText(R.string.automationOff);
-                    autoEnabled = false;
+        textView_toggleAuto.setOnClickListener((v) -> {
+            if (!autoEnabled) {
+                // 録音権限チェック
+                check_permission();
+                if (micAccessAllowed) {
+                    textView_mode.setText(R.string.automationOn);
+                    autoEnabled = true;
                 }
+            } else {
+                textView_mode.setText(R.string.automationOff);
+                autoEnabled = false;
             }
         });
     }
