@@ -1,8 +1,8 @@
 package com.gmail.axis38akasira.autovolumer;
 
 class RegressionModel {
-    private static double[] beta1 = {0.0326086957, 1.46245059};
-    private static double[] beta2 = {0.0176811594, 2.31544266, -7.75456428};
+    private final static double[] beta1 = {0.0326086957, 1.46245059};
+    private final static double[] beta2 = {0.0176811594, 2.31544266, -7.75456428};
 
     static Double infer(double x) {
         if (x <= 0.06) {
