@@ -37,10 +37,10 @@ public class MainActivity extends AppCompatActivity {
         aRes.setAudioManager((AudioManager)getSystemService(Context.AUDIO_SERVICE));
 
         // AudioRecordのハンドラ
-        handler_audioRecord();
+        initHandler();
 
         // モード切替ボタン
-        init_buttonToggleMode();
+        initButtonToggleMode();
     }
 
     private void check_permission() {
@@ -77,7 +77,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void handler_audioRecord() {
+    private void initHandler() {
         final TextView textView_playingVol = findViewById(R.id.tv_playingVol);
         final TextView textView_envVol = findViewById(R.id.tv_envVol);
 
@@ -85,7 +85,7 @@ public class MainActivity extends AppCompatActivity {
         handler.post(new VolumeManager(aRes, handler, textView_envVol, textView_playingVol));
     }
 
-    private void init_buttonToggleMode() {
+    private void initButtonToggleMode() {
         final Button textView_toggleAuto = findViewById(R.id.but_toggleMode);
         final TextView textView_mode = findViewById(R.id.tv_mode);
         textView_toggleAuto.setOnClickListener((v) -> {
