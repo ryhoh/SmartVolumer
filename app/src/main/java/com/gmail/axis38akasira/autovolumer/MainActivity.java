@@ -9,7 +9,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
@@ -120,7 +119,7 @@ public class MainActivity extends AppCompatActivity {
     private void initNotification() {
         notificationManager =
                 (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
-        NotificationChannel notificationChannel = new NotificationChannel(
+        final NotificationChannel notificationChannel = new NotificationChannel(
                 NOTIFICATION_CHANNEL_ID, getString(R.string.app_name),
                 NotificationManager.IMPORTANCE_DEFAULT);
         notificationChannel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
@@ -128,7 +127,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void postNotification() {
-        Notification notification = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
+        final Notification notification =
+                new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
                 .setContentTitle("SmartVolumer")
                 .setContentText("音量の自動調整が有効")
@@ -149,7 +149,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void openSettings() {
-        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+        final Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
         intent.setData(Uri.fromParts("package", getPackageName(), null));
         startActivity(intent);
     }
