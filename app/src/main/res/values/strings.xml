@@ -3,4 +3,6 @@
     <string name="automationOn">自動調整ON</string>
     <string name="automationOff">自動調整OFF</string>
     <string name="mic_unavailable">マイク使用不可</string>
+    <string name="vol_playing">再生音量: </string>
+    <string name="vol_environment">周辺音量: </string>
 </resources>

@@ -19,17 +19,21 @@ public class NotificationWrapper {
     // 全部の通知を管理
     private static final ArrayList<Integer> notificationIds = new ArrayList<>();
 
+    private Activity activity;
     private NotificationManager notificationManager;
     private int notificationId;
     private int notificationRequestCode;
     private String notificationChannelId;
 
-     public NotificationWrapper(@NonNull NotificationManager notificationManager,
-                                @NonNull String notificationChannelId,
-                                @NonNull String name) {
-        this.notificationManager = notificationManager;
+    public NotificationWrapper(@NonNull Activity activity,
+                               @NonNull String notificationChannelId,
+                               @NonNull String name) {
+        this.activity = activity;
+        this.notificationManager =
+                (NotificationManager)activity.getSystemService(Context.NOTIFICATION_SERVICE);
         this.notificationChannelId = notificationChannelId;
 
+        // 複数の通知を扱えるようにクラス変数へ登録
         if (notificationIds.size() == 0) {
             notificationId = 0;
         } else {
@@ -38,6 +42,7 @@ public class NotificationWrapper {
         notificationIds.add(notificationId);
         notificationRequestCode = notificationId;
 
+        // チャネルの設定
         final NotificationChannel notificationChannel = new NotificationChannel(
                 notificationChannelId, name,
                 NotificationManager.IMPORTANCE_DEFAULT);
@@ -45,8 +50,7 @@ public class NotificationWrapper {
         notificationManager.createNotificationChannel(notificationChannel);
     }
 
-    public void post(@NonNull Activity activity, @NonNull Context context,
-                     @NonNull Context baseContext, @NonNull Class DestinationClass,
+    public void post(@NonNull Class DestinationClass,
                      @NonNull String title, @NonNull String text) {
         final Notification notification =
                 new NotificationCompat.Builder(activity, notificationChannelId)
@@ -55,14 +59,18 @@ public class NotificationWrapper {
                         .setContentText(text)
                         .setChannelId(notificationChannelId)
                         .setContentIntent(PendingIntent.getActivity(
-                                context,
+                                activity.getApplicationContext(),
                                 notificationRequestCode,
-                                new Intent(baseContext, DestinationClass),
-                                PendingIntent.FLAG_IMMUTABLE
+                                new Intent(activity.getBaseContext(), DestinationClass),
+                                    PendingIntent.FLAG_IMMUTABLE
                                 )
                         ).build();
         notification.flags = Notification.FLAG_ONGOING_EVENT;
         notificationManager.notify(notificationId, notification);
+    }
+
+    public Activity getActivity() {
+        return activity;
     }
 
     public void cancel() {
