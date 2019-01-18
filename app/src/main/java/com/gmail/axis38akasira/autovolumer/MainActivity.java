@@ -1,10 +1,7 @@
 package com.gmail.axis38akasira.autovolumer;
 
 import android.Manifest;
-import android.app.Notification;
-import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -16,22 +13,21 @@ import android.os.Handler;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.gmail.axis38akasira.autovolumer.notifications.NotificationWrapper;
+
 public class MainActivity extends AppCompatActivity {
 
     final static int MY_PERMISSIONS_REQUEST_RECORD_AUDIO = 128;
     final String NOTIFICATION_CHANNEL_ID = "appearEnable";
-    final int NOTIFICATION_REQUEST_CODE = 1024;
-    final int NOTIFICATION_ID = 1;
 
     final AudioResources aRes = new AudioResources();
-    NotificationManager notificationManager;
+    NotificationWrapper notificationWrapper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,7 +41,11 @@ public class MainActivity extends AppCompatActivity {
         aRes.setAudioManager((AudioManager)getSystemService(Context.AUDIO_SERVICE));
 
         // 通知の初期化
-        initNotification();
+        notificationWrapper = new NotificationWrapper(
+                (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE),
+                NOTIFICATION_CHANNEL_ID,
+                getString(R.string.app_name)
+        );
 
         // AudioRecordのハンドラ
         initHandler();
@@ -106,47 +106,20 @@ public class MainActivity extends AppCompatActivity {
                 if (aRes.getMicAccessAllowed()) {
                     textView_mode.setText(R.string.automationOn);
                     aRes.setAutoEnabled(true);
-                    postNotification();
+                    notificationWrapper.post(
+                            this, getApplicationContext(), getBaseContext(),
+                            MainActivity.class, "SmartVolumer", "音量の自動調整が有効"
+                    );
                 }
             } else {
                 textView_mode.setText(R.string.automationOff);
                 aRes.setAutoEnabled(false);
-                cancelNotification();
+                notificationWrapper.cancel();
             }
         });
     }
 
-    private void initNotification() {
-        notificationManager =
-                (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
-        final NotificationChannel notificationChannel = new NotificationChannel(
-                NOTIFICATION_CHANNEL_ID, getString(R.string.app_name),
-                NotificationManager.IMPORTANCE_DEFAULT);
-        notificationChannel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
-        notificationManager.createNotificationChannel(notificationChannel);
-    }
 
-    private void postNotification() {
-        final Notification notification =
-                new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_launcher_foreground)
-                .setContentTitle("SmartVolumer")
-                .setContentText("音量の自動調整が有効")
-                .setChannelId(NOTIFICATION_CHANNEL_ID)
-                .setContentIntent(PendingIntent.getActivity(
-                        getApplicationContext(),
-                        NOTIFICATION_REQUEST_CODE,
-                        new Intent(getBaseContext(), MainActivity.class),
-                        PendingIntent.FLAG_IMMUTABLE
-                        )
-                ).build();
-        notification.flags = Notification.FLAG_ONGOING_EVENT;
-        notificationManager.notify(NOTIFICATION_ID, notification);
-    }
-
-    private void cancelNotification() {
-        notificationManager.cancel(NOTIFICATION_ID);
-    }
 
     private void openSettings() {
         final Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
