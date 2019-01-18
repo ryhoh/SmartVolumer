@@ -118,9 +118,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
-
-
-
+    
     private void openSettings() {
         final Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
         intent.setData(Uri.fromParts("package", getPackageName(), null));
