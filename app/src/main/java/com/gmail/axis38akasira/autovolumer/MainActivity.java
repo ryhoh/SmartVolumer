@@ -1,7 +1,6 @@
 package com.gmail.axis38akasira.autovolumer;
 
 import android.Manifest;
-import android.app.NotificationManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -42,9 +41,7 @@ public class MainActivity extends AppCompatActivity {
 
         // 通知の初期化
         notificationWrapper = new NotificationWrapper(
-                (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE),
-                NOTIFICATION_CHANNEL_ID,
-                getString(R.string.app_name)
+                this, NOTIFICATION_CHANNEL_ID, getString(R.string.app_name)
         );
 
         // AudioRecordのハンドラ
@@ -93,7 +90,9 @@ public class MainActivity extends AppCompatActivity {
         final TextView textView_envVol = findViewById(R.id.tv_envVol);
 
         final Handler handler = new Handler();
-        handler.post(new VolumeManager(aRes, handler, textView_envVol, textView_playingVol));
+        handler.post(new VolumeManager(
+                aRes, handler, textView_envVol, textView_playingVol, notificationWrapper
+        ));
     }
 
     private void initButtonToggleMode() {
@@ -107,8 +106,9 @@ public class MainActivity extends AppCompatActivity {
                     textView_mode.setText(R.string.automationOn);
                     aRes.setAutoEnabled(true);
                     notificationWrapper.post(
-                            this, getApplicationContext(), getBaseContext(),
-                            MainActivity.class, "SmartVolumer", "音量の自動調整が有効"
+                            MainActivity.class,
+                            "SmartVolumer",
+                            "音量の自動調整が有効"
                     );
                 }
             } else {

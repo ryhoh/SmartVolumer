@@ -64,7 +64,8 @@ class AudioResources {
         }
     }
 
-    void applyPlayingVolume(double inputLevel, @NonNull TextView textView_playingVol) {
+    int applyPlayingVolume(double inputLevel, @NonNull TextView textView_playingVol) {
+        // return 出力レベル
         if (autoEnabled) {
             // 耳を護るために上限を設ける
             double outLevel = RegressionModel.infer(inputLevel / 100000);
@@ -75,6 +76,10 @@ class AudioResources {
             // 再生音量を変更し，TextViewにも反映
             am.setStreamVolume(AudioManager.STREAM_MUSIC, i_outLevel, 0);
             textView_playingVol.setText(String.valueOf(i_outLevel));
+
+            return i_outLevel;
+        } else {
+            return -1;
         }
     }
 
