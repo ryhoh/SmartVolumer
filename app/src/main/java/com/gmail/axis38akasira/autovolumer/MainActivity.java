@@ -128,6 +128,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        notificationWrapper.cancel();
         aRes.deleteAudioRecorder();
     }
 
