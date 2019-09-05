@@ -70,8 +70,11 @@ class AudioResources {
             // 耳を護るために上限を設ける
             double outLevel = RegressionModel.infer(inputLevel / 100000);
             outLevel = Math.min(outLevel, 0.25);
+            // 四捨五入し再生音量を整数値として得る
+            final int nativeIntOutLevel = (int)Math.round(outLevel * am.getStreamMaxVolume(AudioManager.STREAM_MUSIC));
+
             // 下限も設定して音が消えないようにする
-            final int i_outLevel = (int) Math.max(Math.round(outLevel * am.getStreamMaxVolume(AudioManager.STREAM_MUSIC)), 1);
+            final int i_outLevel = Math.max(nativeIntOutLevel, 1);
 
             // 再生音量を変更し，TextViewにも反映
             am.setStreamVolume(AudioManager.STREAM_MUSIC, i_outLevel, 0);
